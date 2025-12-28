@@ -1,62 +1,72 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import LoginButton from './LoginButton';
-import LogoutButton from './LogoutButton';
 import Profile from './Profile';
+import Navbar from './Navbar';
 
 function App() {
   const { isAuthenticated, isLoading, error } = useAuth0();
 
-  if (isLoading) {
-    return (
-      <div className="app-container">
-        <div className="loading-state">
-          <div className="loading-text">Loading...</div>
+  const content = (() => {
+    if (isLoading) {
+      return (
+        <div className="app-container">
+          <div className="loading-state">
+            <div className="loading-text">Chargement...</div>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error) {
+    if (error) {
+      return (
+        <div className="app-container">
+          <div className="error-state">
+            <div className="error-title">Oups !</div>
+            <div className="error-message">Une erreur est survenue</div>
+            <div className="error-sub-message">{error.message}</div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="app-container">
-        <div className="error-state">
-          <div className="error-title">Oops!</div>
-          <div className="error-message">Something went wrong</div>
-          <div className="error-sub-message">{error.message}</div>
+        <div className="main-card-wrapper">
+          <img
+            src="/logo.png"
+            alt="Pizza42 Logo"
+            className="auth0-logo"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <h1 className="main-title">Bienvenue chez Pizza42</h1>
+
+          {isAuthenticated ? (
+            <div className="logged-in-section">
+              <div className="logged-in-message">
+                Connecté. Bon appétit !
+              </div>
+              <h2 className="profile-section-title">Mon compte</h2>
+              <div className="profile-card">
+                <Profile />
+              </div>
+            </div>
+          ) : (
+            <div className="action-card">
+              <p className="action-text">
+                Connectez-vous pour commander vos pizzas.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
-  }
+  })();
 
   return (
-    <div className="app-container">
-      <div className="main-card-wrapper">
-        <img
-          src="/logo.png"
-          alt="Pizza42 Logo"
-          className="auth0-logo"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-        <h1 className="main-title">Welcome to Sample0</h1>
-
-        {isAuthenticated ? (
-          <div className="logged-in-section">
-            <div className="logged-in-message">✅ Successfully authenticated!</div>
-            <h2 className="profile-section-title">Your Profile</h2>
-            <div className="profile-card">
-              <Profile />
-            </div>
-            <LogoutButton />
-          </div>
-        ) : (
-          <div className="action-card">
-            <p className="action-text">Get started by signing in to your account</p>
-            <LoginButton />
-          </div>
-        )}
-      </div>
+    <div className="app-shell">
+      <Navbar />
+      <main className="app-main">{content}</main>
     </div>
   );
 }
