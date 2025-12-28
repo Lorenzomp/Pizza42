@@ -9,11 +9,13 @@ import { getRouteFromHash, navigateTo, type Route } from './router';
 import { useEffect, useMemo, useState } from 'react';
 
 function App() {
-  const { isLoading, error } = useAuth0();
+  const { isLoading, error, isAuthenticated, getAccessTokenSilently, getIdTokenClaims } =
+    useAuth0();
   const [route, setRoute] = useState<Route>(() =>
     getRouteFromHash(window.location.hash),
   );
   const [cartItems, setCartItems] = useState(() => readCart());
+  const [tokensLoggedForUser, setTokensLoggedForUser] = useState(false);
 
   useEffect(() => {
     const onHashChange = () => setRoute(getRouteFromHash(window.location.hash));
@@ -22,6 +24,23 @@ function App() {
   }, []);
 
   useEffect(() => onCartChanged(() => setCartItems(readCart())), []);
+
+  useEffect(() => {
+    const logTokens = async () => {
+      if (!isAuthenticated || tokensLoggedForUser) return;
+      try {
+        const accessToken = await getAccessTokenSilently();
+        const idToken = await getIdTokenClaims();
+        // Logging tokens for debugging purposes only.
+        console.log('Access Token:', accessToken);
+        console.log('ID Token:', idToken?.__raw || idToken);
+        setTokensLoggedForUser(true);
+      } catch (err) {
+        console.warn('Unable to log tokens', err);
+      }
+    };
+    logTokens();
+  }, [isAuthenticated, getAccessTokenSilently, getIdTokenClaims, tokensLoggedForUser]);
 
   const cartCount = useMemo(() => getCartCount(cartItems), [cartItems]);
 

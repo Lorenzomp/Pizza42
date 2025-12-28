@@ -21,7 +21,7 @@ export default function CartPage() {
   const handleCheckout = () => {
     loginWithRedirect({
       authorizationParams: {
-        scope: 'openid profile email address phone',
+        scope: 'openid profile email address phone email_verified',
         redirect_uri: `${window.location.origin}#/success`,
       },
     });
