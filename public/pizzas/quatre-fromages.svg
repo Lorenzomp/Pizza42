@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="16" fill="#232733"/>
+  <circle cx="160" cy="108" r="68" fill="#d9a441"/>
+  <circle cx="160" cy="108" r="56" fill="#f1e3b6"/>
+  <circle cx="160" cy="108" r="48" fill="#f4f1e8"/>
+  <g fill="#f0c24a">
+    <circle cx="140" cy="94" r="8"/>
+    <circle cx="180" cy="98" r="8"/>
+    <circle cx="152" cy="126" r="8"/>
+    <circle cx="192" cy="126" r="7"/>
+  </g>
+  <g fill="#9fd3ff" opacity="0.55">
+    <circle cx="170" cy="112" r="7"/>
+    <circle cx="132" cy="120" r="6"/>
+  </g>
+  <text x="18" y="36" fill="#f7fafc" font-family="Inter,system-ui,Arial" font-size="18" font-weight="700">4 Fromages</text>
+</svg>

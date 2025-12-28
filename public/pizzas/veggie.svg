@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="16" fill="#232733"/>
+  <circle cx="160" cy="108" r="68" fill="#d9a441"/>
+  <circle cx="160" cy="108" r="56" fill="#cf3c3c"/>
+  <circle cx="160" cy="108" r="48" fill="#f4f1e8"/>
+  <g fill="#3fb36a">
+    <circle cx="140" cy="94" r="7"/>
+    <circle cx="184" cy="98" r="7"/>
+    <circle cx="156" cy="128" r="7"/>
+    <circle cx="194" cy="126" r="6"/>
+  </g>
+  <g fill="#8e44ad" opacity="0.9">
+    <path d="M125 114c6-10 16-10 22 0-6 10-16 10-22 0z"/>
+    <path d="M178 88c6-10 16-10 22 0-6 10-16 10-22 0z"/>
+  </g>
+  <text x="18" y="36" fill="#f7fafc" font-family="Inter,system-ui,Arial" font-size="18" font-weight="700">Veggie</text>
+</svg>

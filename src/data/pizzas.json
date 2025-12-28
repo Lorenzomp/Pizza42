@@ -1,0 +1,50 @@
+[
+  {
+    "id": "margherita",
+    "name": "Margherita",
+    "description": "Sauce tomate, mozzarella, basilic",
+    "priceCents": 950,
+    "tags": ["Classique", "Végétarienne"],
+    "image": "/pizzas/margherita.svg"
+  },
+  {
+    "id": "reine",
+    "name": "Reine",
+    "description": "Sauce tomate, mozzarella, jambon, champignons",
+    "priceCents": 1190,
+    "tags": ["Best-seller"],
+    "image": "/pizzas/reine.svg"
+  },
+  {
+    "id": "pepperoni",
+    "name": "Pepperoni",
+    "description": "Sauce tomate, mozzarella, pepperoni",
+    "priceCents": 1290,
+    "tags": ["Épicée"],
+    "image": "/pizzas/pepperoni.svg"
+  },
+  {
+    "id": "quatre-fromages",
+    "name": "4 Fromages",
+    "description": "Crème, mozzarella, gorgonzola, chèvre, emmental",
+    "priceCents": 1390,
+    "tags": ["Gourmande", "Végétarienne"],
+    "image": "/pizzas/quatre-fromages.svg"
+  },
+  {
+    "id": "veggie",
+    "name": "Veggie",
+    "description": "Sauce tomate, mozzarella, poivrons, oignons, olives, roquette",
+    "priceCents": 1290,
+    "tags": ["Végétarienne"],
+    "image": "/pizzas/veggie.svg"
+  },
+  {
+    "id": "bbq-poulet",
+    "name": "BBQ Poulet",
+    "description": "Sauce BBQ, mozzarella, poulet, oignons rouges",
+    "priceCents": 1490,
+    "tags": ["Nouveau"],
+    "image": "/pizzas/bbq-poulet.svg"
+  }
+]

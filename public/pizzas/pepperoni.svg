@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="16" fill="#232733"/>
+  <circle cx="160" cy="108" r="68" fill="#d9a441"/>
+  <circle cx="160" cy="108" r="56" fill="#cf3c3c"/>
+  <circle cx="160" cy="108" r="48" fill="#f4f1e8"/>
+  <g fill="#b3262e">
+    <circle cx="136" cy="96" r="10"/>
+    <circle cx="184" cy="94" r="10"/>
+    <circle cx="156" cy="128" r="10"/>
+    <circle cx="190" cy="126" r="9"/>
+  </g>
+  <g fill="#f7fafc" opacity="0.25">
+    <circle cx="136" cy="96" r="4"/>
+    <circle cx="184" cy="94" r="4"/>
+    <circle cx="156" cy="128" r="4"/>
+    <circle cx="190" cy="126" r="3.5"/>
+  </g>
+  <text x="18" y="36" fill="#f7fafc" font-family="Inter,system-ui,Arial" font-size="18" font-weight="700">Pepperoni</text>
+</svg>

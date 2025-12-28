@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="16" fill="#232733"/>
+  <circle cx="160" cy="108" r="68" fill="#d9a441"/>
+  <circle cx="160" cy="108" r="56" fill="#cf3c3c"/>
+  <circle cx="160" cy="108" r="48" fill="#f4f1e8"/>
+  <g fill="#d88989">
+    <path d="M132 92h26a8 8 0 0 1 0 16h-26a8 8 0 0 1 0-16z"/>
+    <path d="M164 120h28a8 8 0 0 1 0 16h-28a8 8 0 0 1 0-16z"/>
+  </g>
+  <g fill="#b59b7a">
+    <circle cx="196" cy="94" r="8"/>
+    <circle cx="146" cy="130" r="8"/>
+    <circle cx="172" cy="104" r="7"/>
+  </g>
+  <text x="18" y="36" fill="#f7fafc" font-family="Inter,system-ui,Arial" font-size="18" font-weight="700">Reine</text>
+</svg>

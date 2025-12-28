@@ -1,14 +1,34 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import Profile from './Profile';
 import Navbar from './Navbar';
+import { getCartCount, onCartChanged, readCart } from './cart/storage';
+import CartPage from './pages/CartPage';
+import HomePage from './pages/HomePage';
+import ProfilePage from './pages/ProfilePage';
+import SuccessOrderPage from './pages/SuccessOrderPage';
+import { getRouteFromHash, navigateTo, type Route } from './router';
+import { useEffect, useMemo, useState } from 'react';
 
 function App() {
-  const { isAuthenticated, isLoading, error } = useAuth0();
+  const { isLoading, error } = useAuth0();
+  const [route, setRoute] = useState<Route>(() =>
+    getRouteFromHash(window.location.hash),
+  );
+  const [cartItems, setCartItems] = useState(() => readCart());
+
+  useEffect(() => {
+    const onHashChange = () => setRoute(getRouteFromHash(window.location.hash));
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => onCartChanged(() => setCartItems(readCart())), []);
+
+  const cartCount = useMemo(() => getCartCount(cartItems), [cartItems]);
 
   const content = (() => {
     if (isLoading) {
       return (
-        <div className="app-container">
+        <div className="app-container center">
           <div className="loading-state">
             <div className="loading-text">Chargement...</div>
           </div>
@@ -18,7 +38,7 @@ function App() {
 
     if (error) {
       return (
-        <div className="app-container">
+        <div className="app-container center">
           <div className="error-state">
             <div className="error-title">Oups !</div>
             <div className="error-message">Une erreur est survenue</div>
@@ -28,44 +48,22 @@ function App() {
       );
     }
 
-    return (
-      <div className="app-container">
-        <div className="main-card-wrapper">
-          <img
-            src="/logo.png"
-            alt="Pizza42 Logo"
-            className="auth0-logo"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-          <h1 className="main-title">Bienvenue chez Pizza42</h1>
-
-          {isAuthenticated ? (
-            <div className="logged-in-section">
-              <div className="logged-in-message">
-                Connecté. Bon appétit !
-              </div>
-              <h2 className="profile-section-title">Mon compte</h2>
-              <div className="profile-card">
-                <Profile />
-              </div>
-            </div>
-          ) : (
-            <div className="action-card">
-              <p className="action-text">
-                Connectez-vous pour commander vos pizzas.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    if (route === 'cart') return <CartPage />;
+    if (route === 'profile') return <ProfilePage />;
+    if (route === 'success') return <SuccessOrderPage />;
+    return <HomePage />;
   })();
 
   return (
     <div className="app-shell">
-      <Navbar />
+      <Navbar
+        route={route}
+        cartCount={cartCount}
+        onNavigate={(next) => {
+          navigateTo(next);
+          setRoute(next);
+        }}
+      />
       <main className="app-main">{content}</main>
     </div>
   );

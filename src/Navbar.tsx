@@ -1,15 +1,29 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import LoginButton from './LoginButton';
 import LogoutButton from './LogoutButton';
+import type { Route } from './router';
 
-export default function Navbar() {
+type NavbarProps = {
+  route: Route;
+  cartCount: number;
+  onNavigate: (route: Route) => void;
+};
+
+export default function Navbar({ route, cartCount, onNavigate }: NavbarProps) {
   const { isAuthenticated, isLoading } = useAuth0();
 
   return (
     <header className="navbar">
       <div className="navbar-inner">
         <div className="navbar-left">
-          <img src="/logo.png" alt="Pizza42" className="navbar-logo" />
+          <button
+            type="button"
+            className="brand"
+            onClick={() => onNavigate('home')}
+            aria-label="Aller à l'accueil"
+          >
+            <img src="/logo.png" alt="Pizza42" className="navbar-logo" />
+          </button>
         </div>
 
         <div className="navbar-right">
@@ -20,6 +34,8 @@ export default function Navbar() {
                 className="button icon profile"
                 aria-label="Mon profil"
                 disabled={isLoading}
+                aria-current={route === 'profile' ? 'page' : undefined}
+                onClick={() => onNavigate('profile')}
               >
                 <img
                   src="/profile.svg"
@@ -43,8 +59,15 @@ export default function Navbar() {
             />
           )}
 
-          <button type="button" className="button icon cart" aria-label="Panier">
+          <button
+            type="button"
+            className="button icon cart"
+            aria-label={`Panier (${cartCount})`}
+            aria-current={route === 'cart' ? 'page' : undefined}
+            onClick={() => onNavigate('cart')}
+          >
             <img src="/cart.svg" alt="" className="nav-icon" aria-hidden />
+            {cartCount > 0 ? <span className="badge">{cartCount}</span> : null}
           </button>
         </div>
       </div>

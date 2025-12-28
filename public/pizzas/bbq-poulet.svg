@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="16" fill="#232733"/>
+  <circle cx="160" cy="108" r="68" fill="#d9a441"/>
+  <circle cx="160" cy="108" r="56" fill="#6b3f2e"/>
+  <circle cx="160" cy="108" r="48" fill="#f4f1e8"/>
+  <g fill="#f2c29a">
+    <path d="M134 92h22a7 7 0 0 1 0 14h-22a7 7 0 0 1 0-14z"/>
+    <path d="M170 118h26a7 7 0 0 1 0 14h-26a7 7 0 0 1 0-14z"/>
+  </g>
+  <g fill="#c0392b" opacity="0.9">
+    <circle cx="190" cy="96" r="6"/>
+    <circle cx="146" cy="128" r="6"/>
+  </g>
+  <text x="18" y="36" fill="#f7fafc" font-family="Inter,system-ui,Arial" font-size="18" font-weight="700">BBQ Poulet</text>
+</svg>
