@@ -10,6 +10,8 @@ import {
 } from '../cart/storage';
 import { formatPriceEUR } from '../format';
 
+const PENDING_ORDER_KEY = 'pizza42_pending_order_v1';
+
 export default function CartPage() {
   const { loginWithRedirect, isLoading: isAuthLoading } = useAuth0();
   const [items, setItems] = useState<CartItem[]>(() => readCart());
@@ -19,9 +21,15 @@ export default function CartPage() {
   const totalCents = useMemo(() => getCartTotalCents(items), [items]);
 
   const handleCheckout = () => {
+    const pendingOrder = {
+      items,
+      totalCents,
+    };
+    sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(pendingOrder));
+
     loginWithRedirect({
       authorizationParams: {
-        scope: 'openid profile email address phone email_verified',
+        scope: 'openid profile email address phone email_verified update:my_profile',
         redirect_uri: `${window.location.origin}#/success`,
       },
     });

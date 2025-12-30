@@ -39,7 +39,7 @@ export default function Navbar({ route, cartCount, onNavigate }: NavbarProps) {
                   loginWithRedirect({
                     authorizationParams: {
                       scope:
-                        'openid profile email phone address email_verified orders',
+                        'openid profile email phone address email_verified orders update:user_app_metadata',
                       redirect_uri: `${window.location.origin}#/profile`,
                     },
                   })

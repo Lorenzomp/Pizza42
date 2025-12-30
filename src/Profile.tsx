@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { apiBasePath } from './api/basePath';
 
 const Profile = () => {
-  const { user, isAuthenticated, isLoading, getIdTokenClaims } = useAuth0();
+  const { user, isAuthenticated, isLoading, getIdTokenClaims, getAccessTokenSilently } =
+    useAuth0();
   const [loadingClaims, setLoadingClaims] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -132,6 +137,52 @@ const Profile = () => {
     return <div className="loading-text">Chargement du profil...</div>;
   }
 
+  const handleSave = async () => {
+    if (!isAuthenticated) return;
+    setSaveError('');
+    setSaveSuccess(false);
+
+    const updates: Record<string, unknown> = {};
+    const trimmedAddress = form.address.trim();
+    const trimmedPhone = form.phone.trim();
+
+    if (trimmedAddress) updates.address = trimmedAddress;
+    if (trimmedPhone) updates.phone = { number: trimmedPhone };
+
+    if (!apiBasePath) {
+      setSaveError("Impossible de déterminer l'API.");
+      return;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      setSaveError('Aucune donnée à mettre à jour.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`${apiBasePath}/me/metadata`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur API');
+      }
+
+      setSaveSuccess(true);
+    } catch {
+      setSaveError('Mise à jour impossible pour le moment.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     isAuthenticated && user ? (
       <div className="profile-panel">
@@ -191,11 +242,22 @@ const Profile = () => {
           </div>
 
           <div className="field">
-            <button type="button" className="button secondary" disabled>
-              Mise à jour (bientôt disponible)
+            <button
+              type="button"
+              className="button secondary"
+              disabled={saving || loadingClaims}
+              onClick={handleSave}
+            >
+              {saving ? 'Mise à jour...' : 'Mettre à jour'}
             </button>
             {loadingClaims ? (
               <p className="hint">Mise à jour...</p>
+            ) : null}
+            {saveSuccess ? (
+              <p className="hint">Profil mis à jour.</p>
+            ) : null}
+            {saveError ? (
+              <p className="hint">{saveError}</p>
             ) : null}
           </div>
         </div>
