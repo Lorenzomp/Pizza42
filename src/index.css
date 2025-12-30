@@ -656,6 +656,78 @@ body {
   gap: 0.9rem;
 }
 
+.profile-orders {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.orders-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.orders-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #f7fafc;
+}
+
+.orders-subtitle {
+  margin: 0;
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+
+.orders-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.order-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.order-id {
+  font-weight: 700;
+  color: #f7fafc;
+}
+
+.order-sub {
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+
+.order-items {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.order-total {
+  font-weight: 700;
+  color: #fbd38d;
+}
+
 .field {
   display: flex;
   flex-direction: column;

@@ -2,6 +2,124 @@ import { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { apiBasePath } from './api/basePath';
 
+type OrderSummary = {
+  id: string;
+  createdAt: string | null;
+  createdAtTs: number | null;
+  totalCents: number | null;
+  itemsCount: number | null;
+  itemNames: string[];
+};
+
+const currencyFormatter = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+});
+
+const parseTimestamp = (value: unknown): number | null => {
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  const ts = date.valueOf();
+  return Number.isNaN(ts) ? null : ts;
+};
+
+const findNamespacedOrders = (claimsObj: Record<string, unknown>) => {
+  const key = Object.keys(claimsObj).find((candidate) =>
+    candidate.endsWith('/orders'),
+  );
+  return key ? claimsObj[key] : null;
+};
+
+const extractOrdersFromClaims = (claims: unknown): OrderSummary[] => {
+  const claimsObj = claims as Record<string, unknown> | null;
+  if (!claimsObj) return [];
+
+  const directOrders = claimsObj.orders;
+  const appMetadataOrders =
+    (claimsObj.app_metadata as Record<string, unknown> | undefined)?.orders;
+  const namespacedOrders = findNamespacedOrders(claimsObj);
+  const rawOrders = Array.isArray(directOrders)
+    ? directOrders
+    : Array.isArray(appMetadataOrders)
+      ? appMetadataOrders
+      : Array.isArray(namespacedOrders)
+        ? namespacedOrders
+        : [];
+
+  return rawOrders
+    .map((raw, index) => {
+      if (!raw || typeof raw !== 'object') return null;
+      const order = raw as Record<string, unknown>;
+      const id =
+        typeof order.id === 'string' && order.id.trim().length > 0
+          ? order.id
+          : `Commande ${index + 1}`;
+      const createdAt =
+        typeof order.createdAt === 'string' ? order.createdAt : null;
+      const createdAtTs = parseTimestamp(createdAt);
+      const totalCents =
+        typeof order.totalCents === 'number' && Number.isFinite(order.totalCents)
+          ? order.totalCents
+          : null;
+      const items = Array.isArray(order.items) ? order.items : [];
+      let itemsCount = 0;
+      let hasQuantity = false;
+      const itemNames = items
+        .map((item) => {
+          if (!item || typeof item !== 'object') return null;
+          const name = (item as Record<string, unknown>).name;
+          return typeof name === 'string' && name.trim().length > 0
+            ? name.trim()
+            : null;
+        })
+        .filter((name): name is string => Boolean(name));
+
+      items.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        const qty = (item as Record<string, unknown>).quantity;
+        if (typeof qty === 'number' && Number.isFinite(qty)) {
+          itemsCount += qty;
+          hasQuantity = true;
+        }
+      });
+
+      const safeItemsCount = hasQuantity ? itemsCount : items.length || null;
+
+      return {
+        id,
+        createdAt,
+        createdAtTs,
+        totalCents,
+        itemsCount: safeItemsCount,
+        itemNames,
+      };
+    })
+    .filter((order): order is OrderSummary => Boolean(order))
+    .sort((a, b) => (b.createdAtTs ?? 0) - (a.createdAtTs ?? 0))
+    .slice(0, 3);
+};
+
+const formatOrderDate = (value: string | null) => {
+  if (!value) return 'Date inconnue';
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return 'Date inconnue';
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatItemsCount = (value: number | null) => {
+  if (value === null) return 'Articles inconnus';
+  return value === 1 ? '1 article' : `${value} articles`;
+};
+
+const formatTotal = (value: number | null) => {
+  if (value === null) return 'Total inconnu';
+  return currencyFormatter.format(value / 100);
+};
+
 const Profile = () => {
   const { user, isAuthenticated, isLoading, getIdTokenClaims, getAccessTokenSilently } =
     useAuth0();
@@ -15,6 +133,7 @@ const Profile = () => {
     phone: '',
     address: '',
   });
+  const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
 
   const baseName = user?.name || '';
   const baseEmail = user?.email || '';
@@ -24,6 +143,7 @@ const Profile = () => {
     const loadClaims = async () => {
       if (!isAuthenticated) {
         setForm({ name: '', email: '', phone: '', address: '' });
+        setRecentOrders([]);
         return;
       }
       setLoadingClaims(true);
@@ -107,6 +227,7 @@ const Profile = () => {
 
         const phone = extractPhone();
         const address = extractAddress();
+        const orders = extractOrdersFromClaims(claims);
 
         if (!active) return;
         setForm({
@@ -115,6 +236,7 @@ const Profile = () => {
           phone: phone || '',
           address: address || '',
         });
+        setRecentOrders(orders);
       } catch {
         if (!active) return;
         setForm({
@@ -123,6 +245,7 @@ const Profile = () => {
           phone: '',
           address: '',
         });
+        setRecentOrders([]);
       } finally {
         if (active) setLoadingClaims(false);
       }
@@ -260,6 +383,42 @@ const Profile = () => {
               <p className="hint">{saveError}</p>
             ) : null}
           </div>
+        </div>
+
+        <div className="profile-orders">
+          <div className="orders-header">
+            <h2 className="orders-title">Dernières commandes</h2>
+            <p className="orders-subtitle">Extraites de votre jeton</p>
+          </div>
+          {loadingClaims ? (
+            <p className="hint">Chargement des commandes...</p>
+          ) : null}
+          {!loadingClaims && recentOrders.length === 0 ? (
+            <p className="hint">Aucune commande disponible dans le jeton.</p>
+          ) : null}
+          {!loadingClaims && recentOrders.length > 0 ? (
+            <ul className="orders-list">
+              {recentOrders.map((order) => (
+                <li key={order.id} className="order-row">
+                  <div className="order-meta">
+                    <div className="order-id">{order.id}</div>
+                    <div className="order-sub">
+                      {formatOrderDate(order.createdAt)} ·{' '}
+                      {formatItemsCount(order.itemsCount)}
+                    </div>
+                    {order.itemNames.length > 0 ? (
+                      <div className="order-items">
+                        {order.itemNames.join(', ')}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="order-total">
+                    {formatTotal(order.totalCents)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
     ) : null
