@@ -32,6 +32,8 @@ const Profile = () => {
             | undefined;
 
           const candidatesString: unknown[] = [
+            claims?.phone,
+            (user as Record<string, unknown> | undefined)?.phone,
             claims?.phone_number,
             phoneFromClaimsObj?.internationalNumber,
             phoneFromClaimsObj?.nationalNumber,
@@ -49,8 +51,12 @@ const Profile = () => {
         };
 
         const extractAddress = (): string => {
-          const addressRaw = claims?.address as unknown;
-          const addressUser = (user as Record<string, unknown> | undefined)?.address as unknown;
+          const addressRaw =
+            (claims as Record<string, unknown> | undefined)?.full_address ??
+            claims?.address;
+          const addressUser =
+            (user as Record<string, unknown> | undefined)?.full_address ??
+            (user as Record<string, unknown> | undefined)?.address;
 
           const candidateObjects = [addressRaw, addressUser].filter(
             (val) => val && typeof val === 'object',
@@ -149,15 +155,6 @@ const Profile = () => {
         </div>
 
         <div className="profile-form">
-          <div className="field">
-            <label htmlFor="name">Nom complet</label>
-            <input
-              id="name"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Nom et prénom"
-            />
-          </div>
 
           <div className="field">
             <label htmlFor="email">Email</label>
@@ -178,9 +175,6 @@ const Profile = () => {
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               placeholder="Votre numéro"
             />
-            <p className="hint">
-              Récupéré depuis les claims du token Auth0 (scope phone). Peut être vide si non fourni.
-            </p>
           </div>
 
           <div className="field">
@@ -194,9 +188,6 @@ const Profile = () => {
               placeholder="Adresse postale"
               rows={3}
             />
-            <p className="hint">
-              Issue des claims d'adresse (scope address). Modifiable localement.
-            </p>
           </div>
 
           <div className="field">
@@ -204,7 +195,7 @@ const Profile = () => {
               Mise à jour (bientôt disponible)
             </button>
             {loadingClaims ? (
-              <p className="hint">Mise à jour depuis vos tokens...</p>
+              <p className="hint">Mise à jour...</p>
             ) : null}
           </div>
         </div>
