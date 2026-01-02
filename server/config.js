@@ -19,4 +19,4 @@ export const auth0Audience = audience;
 export const auth0Domain = domain;
 export const auth0Issuer = `https://${domain}/`;
 export const basePath = resolveBasePath(audience);
-export const port = process.env.SERVER_PORT || 3000;
+export const port = process.env.PORT || 3000;
