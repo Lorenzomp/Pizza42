@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const audience = env.AUTH0_AUDIENCE;
   const basePath = resolveBasePath(audience);
+  const apiPort = Number(env.PORT || 3000);
+  const apiTarget = `http://localhost:${Number.isFinite(apiPort) ? apiPort : 3000}`;
 
   return {
     plugins: [react()],
@@ -22,7 +24,7 @@ export default defineConfig(({ mode }) => {
       ? {
         proxy: {
           [basePath]: {
-            target: 'http://localhost:3000',
+            target: apiTarget,
             changeOrigin: true,
           },
         },
