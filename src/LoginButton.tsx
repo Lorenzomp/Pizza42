@@ -18,7 +18,13 @@ export default function LoginButton({
   return (
     <button
       type="button"
-      onClick={() => loginWithRedirect()}
+      onClick={() => loginWithRedirect({
+        authorizationParams: {
+          scope:
+            'openid profile email offline_access',
+          redirect_uri: `${window.location.origin}#/profile`,
+        },
+      })}
       className={classes}
       disabled={disabled}
     >

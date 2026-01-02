@@ -29,7 +29,7 @@ export default function CartPage() {
 
     loginWithRedirect({
       authorizationParams: {
-        scope: 'openid profile email address phone email_verified update:my_profile',
+        scope: 'openid profile email offline_access address phone email_verified update:my_profile',
         redirect_uri: `${window.location.origin}#/success`,
       },
     });
