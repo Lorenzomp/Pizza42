@@ -8,5 +8,5 @@ const resolveBasePath = (audience?: string) => {
 };
 
 export const apiBasePath = resolveBasePath(
-  import.meta.env.VITE_AUTH0_AUDIENCE || import.meta.env.AUTH0_AUDIENCE,
+  import.meta.env.AUTH0_AUDIENCE,
 );
