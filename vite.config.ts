@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    envPrefix: ['VITE_', 'AUTH0_'],
+    envPrefix: ['AUTH0_'],
     server: basePath
       ? {
         proxy: {
