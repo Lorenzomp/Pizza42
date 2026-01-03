@@ -31,8 +31,8 @@ export default function CartPage() {
     loginWithRedirect({
       authorizationParams: {
         scope: auth0Scopes.checkout,
-        redirect_uri: `${window.location.origin}#/success`,
       },
+      appState: { returnTo: '#/success' },
     });
   };
 

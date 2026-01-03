@@ -7,6 +7,31 @@ import ProfilePage from './pages/ProfilePage';
 import SuccessOrderPage from './pages/SuccessOrderPage';
 import { getRouteFromHash, navigateTo, type Route } from './router';
 import { useEffect, useMemo, useState } from 'react';
+import { auth0Scopes } from './auth/scopes';
+
+const INVALID_STATE_RECOVERY_KEY = 'pizza42_invalid_state_recovery_v1';
+
+function isInvalidStateError(error: unknown) {
+  const message =
+    typeof error === 'object' && error !== null && 'message' in error
+      ? String((error as { message?: unknown }).message)
+      : '';
+  return /invalid state/i.test(message);
+}
+
+function stripAuthCallbackFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('code');
+    url.searchParams.delete('state');
+    url.searchParams.delete('error');
+    url.searchParams.delete('error_description');
+    const cleaned = `${url.origin}${url.pathname}${url.hash}`;
+    window.history.replaceState({}, document.title, cleaned);
+  } catch {
+    // ignore
+  }
+}
 
 function App() {
   const {
@@ -62,6 +87,14 @@ function App() {
     }
 
     if (error) {
+      if (isInvalidStateError(error)) {
+        return (
+          <InvalidStateRecovery
+            route={route}
+            loginWithRedirect={loginWithRedirect}
+          />
+        );
+      }
       return (
         <div className="app-container center">
           <div className="error-state">
@@ -85,7 +118,7 @@ function App() {
         route={route}
         cartCount={cartCount}
         onNavigate={(next) => {
-          const didNavigate = navigateTo(next, { loginWithRedirect });
+          const didNavigate = navigateTo(next);
           if (didNavigate) setRoute(next);
         }}
       />
@@ -95,3 +128,44 @@ function App() {
 }
 
 export default App;
+
+function InvalidStateRecovery({
+  route,
+  loginWithRedirect,
+}: {
+  route: Route;
+  loginWithRedirect: (options?: {
+    authorizationParams?: { scope?: string };
+    appState?: { returnTo?: string };
+  }) => void | Promise<void>;
+}) {
+  useEffect(() => {
+    const key = `${INVALID_STATE_RECOVERY_KEY}:${window.location.pathname}:${window.location.hash}`;
+    const alreadyRecovered = sessionStorage.getItem(key) === 'true';
+    if (alreadyRecovered) return;
+    sessionStorage.setItem(key, 'true');
+
+    stripAuthCallbackFromUrl();
+    sessionStorage.removeItem('pizza42_profile_scope_upgrade_v1');
+
+    if (route === 'profile') {
+      const base = auth0Scopes.profile.trim();
+      const requiredScopes = base ? `${base} address phone email_verified` : 'address phone email_verified';
+      void loginWithRedirect({
+        authorizationParams: { scope: requiredScopes },
+        appState: { returnTo: '#/profile' },
+      });
+      return;
+    }
+
+    window.location.reload();
+  }, [route, loginWithRedirect]);
+
+  return (
+    <div className="app-container center">
+      <div className="loading-state">
+        <div className="loading-text">Récupération de session...</div>
+      </div>
+    </div>
+  );
+}

@@ -11,7 +11,6 @@ export default function SuccessOrderPage() {
     isAuthenticated,
     isLoading,
     getAccessTokenSilently,
-    loginWithRedirect,
   } = useAuth0();
   const [cleared, setCleared] = useState(false);
   const [orderSaved, setOrderSaved] = useState(false);
@@ -93,7 +92,7 @@ export default function SuccessOrderPage() {
             <button
               type="button"
               className="button primary"
-              onClick={() => navigateTo('profile', { loginWithRedirect })}
+              onClick={() => navigateTo('profile')}
             >
               Accéder aux commandes
             </button>

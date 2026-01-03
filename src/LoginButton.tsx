@@ -22,8 +22,8 @@ export default function LoginButton({
       onClick={() => loginWithRedirect({
         authorizationParams: {
           scope: auth0Scopes.login,
-          redirect_uri: `${window.location.origin}#/`,
         },
+        appState: { returnTo: '#/' },
       })}
       className={classes}
       disabled={disabled}
