@@ -2,6 +2,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const debugEnabled = String(process.env.DEBUG || '').toLowerCase() === 'true';
+if (!debugEnabled) {
+  console.log = () => {};
+}
+
 const audience = process.env.AUTH0_AUDIENCE;
 const domain = process.env.AUTH0_DOMAIN;
 
@@ -19,3 +24,4 @@ export const auth0Audience = audience;
 export const auth0Domain = domain;
 export const auth0Issuer = `https://${domain}/`;
 export const basePath = resolveBasePath(audience);
+export { debugEnabled };
