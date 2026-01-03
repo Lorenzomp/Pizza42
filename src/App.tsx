@@ -33,6 +33,20 @@ function stripAuthCallbackFromUrl() {
   }
 }
 
+function hasAuthCallbackParams() {
+  try {
+    const url = new URL(window.location.href);
+    return (
+      url.searchParams.has('code') ||
+      url.searchParams.has('state') ||
+      url.searchParams.has('error') ||
+      url.searchParams.has('error_description')
+    );
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const {
     isLoading,
@@ -56,22 +70,26 @@ function App() {
 
   useEffect(() => onCartChanged(() => setCartItems(readCart())), []);
 
-  useEffect(() => {
-    const logTokens = async () => {
-      if (!isAuthenticated || tokensLoggedForUser) return;
-      try {
-        const accessToken = await getAccessTokenSilently();
-        const idToken = await getIdTokenClaims();
-        // Logging tokens for debugging purposes only.
-        console.log('Access Token:', accessToken);
-        console.log('ID Token:', idToken?.__raw || idToken);
-        setTokensLoggedForUser(true);
-      } catch (err) {
-        console.warn('Unable to log tokens', err);
-      }
-    };
-    logTokens();
-  }, [isAuthenticated, getAccessTokenSilently, getIdTokenClaims, tokensLoggedForUser]);
+	  useEffect(() => {
+	    const logTokens = async () => {
+	      if (!isAuthenticated || tokensLoggedForUser) return;
+	      try {
+	        const accessToken = await getAccessTokenSilently({
+	          authorizationParams: {
+	            audience: import.meta.env.AUTH0_AUDIENCE,
+	          },
+	        });
+	        const idToken = await getIdTokenClaims();
+	        // Logging tokens for debugging purposes only.
+	        console.log('Access Token:', accessToken);
+	        console.log('ID Token:', idToken);
+	        setTokensLoggedForUser(true);
+	      } catch (err) {
+	        console.warn('Unable to log tokens', err);
+	      }
+	    };
+	    logTokens();
+	  }, [isAuthenticated, getAccessTokenSilently, getIdTokenClaims, tokensLoggedForUser]);
 
   const cartCount = useMemo(() => getCartCount(cartItems), [cartItems]);
 
@@ -87,7 +105,7 @@ function App() {
     }
 
     if (error) {
-      if (isInvalidStateError(error)) {
+      if (isInvalidStateError(error) && hasAuthCallbackParams()) {
         return (
           <InvalidStateRecovery
             route={route}

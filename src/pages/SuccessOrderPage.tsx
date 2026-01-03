@@ -44,13 +44,17 @@ export default function SuccessOrderPage() {
         return;
       }
 
-      try {
-        const token = await getAccessTokenSilently();
-        const response = await fetch(`${apiBasePath}/me/orders`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+	      try {
+	        const token = await getAccessTokenSilently({
+	          authorizationParams: {
+	            audience: import.meta.env.AUTH0_AUDIENCE,
+	          },
+	        });
+	        const response = await fetch(`${apiBasePath}/me/orders`, {
+	          method: 'POST',
+	          headers: {
+	            Authorization: `Bearer ${token}`,
+	            'Content-Type': 'application/json',
           },
           body: JSON.stringify({ items, totalCents }),
         });
@@ -69,7 +73,7 @@ export default function SuccessOrderPage() {
     };
 
     if (!cleared) saveOrder();
-  }, [isAuthenticated, isLoading, cleared, orderSaved, getAccessTokenSilently]);
+	  }, [isAuthenticated, isLoading, cleared, orderSaved, getAccessTokenSilently]);
 
   return (
     <div className="page">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { apiBasePath } from './api/basePath';
+import { auth0Scopes } from './auth/scopes';
 
 type OrderSummary = {
   id: string;
@@ -120,9 +121,36 @@ const formatTotal = (value: number | null) => {
   return currencyFormatter.format(value / 100);
 };
 
+const resolveIssuerBaseURL = (domain?: string) => {
+  if (!domain) return '';
+  return domain.startsWith('http') ? domain : `https://${domain}`;
+};
+
+const decodeJwtPayload = (token?: string) => {
+  if (!token) return undefined;
+  const parts = token.split('.');
+  if (parts.length < 2) return undefined;
+  try {
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = payload.padEnd(
+      payload.length + ((4 - (payload.length % 4)) % 4),
+      '=',
+    );
+    const json = atob(padded);
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+};
+
 const Profile = () => {
-  const { user, isAuthenticated, isLoading, getIdTokenClaims, getAccessTokenSilently } =
-    useAuth0();
+  const {
+    user,
+    isAuthenticated,
+    isLoading,
+    getIdTokenClaims,
+    getAccessTokenSilently,
+  } = useAuth0();
   const [loadingClaims, setLoadingClaims] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -134,6 +162,8 @@ const Profile = () => {
     address: '',
   });
   const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
+  const [refreshingOrders, setRefreshingOrders] = useState(false);
+  const [refreshOrdersError, setRefreshOrdersError] = useState('');
 
   const baseName = user?.name || '';
   const baseEmail = user?.email || '';
@@ -282,14 +312,18 @@ const Profile = () => {
       return;
     }
 
-    setSaving(true);
-    try {
-      const token = await getAccessTokenSilently();
-      const response = await fetch(`${apiBasePath}/me/metadata`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+	    setSaving(true);
+	    try {
+	      const token = await getAccessTokenSilently({
+	        authorizationParams: {
+	          audience: import.meta.env.AUTH0_AUDIENCE,
+	        },
+	      });
+	      const response = await fetch(`${apiBasePath}/me/metadata`, {
+	        method: 'PATCH',
+	        headers: {
+	          Authorization: `Bearer ${token}`,
+	          'Content-Type': 'application/json',
         },
         body: JSON.stringify(updates),
       });
@@ -303,6 +337,68 @@ const Profile = () => {
       setSaveError('Mise à jour impossible pour le moment.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRefreshOrders = async () => {
+    if (!isAuthenticated) return;
+    setRefreshOrdersError('');
+    setRefreshingOrders(true);
+    try {
+      const tokenResponse = await getAccessTokenSilently({
+        detailedResponse: true,
+        authorizationParams: {
+          scope: auth0Scopes.profile,
+        },
+      });
+
+      const accessToken = tokenResponse.access_token;
+      const decoded = decodeJwtPayload(accessToken);
+      console.log('[profile] refresh orders token details', {
+        tokenEndpointScope: tokenResponse.scope,
+        accessTokenAud: decoded?.aud,
+        accessTokenIss: decoded?.iss,
+        accessTokenSub: decoded?.sub,
+      });
+      const issuerBaseURL = resolveIssuerBaseURL(import.meta.env.AUTH0_DOMAIN);
+      if (!issuerBaseURL) {
+        throw new Error('missing_auth0_domain');
+      }
+
+      const response = await fetch(`${issuerBaseURL}/userinfo`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        let body = '';
+        try {
+          body = await response.text();
+        } catch {
+          body = '';
+        }
+        console.warn('[profile] /userinfo failed', {
+          status: response.status,
+          statusText: response.statusText,
+          body,
+        });
+        throw new Error(`userinfo_failed:${response.status}`);
+      }
+
+      const userInfo = await response.json();
+      console.log('[profile] /userinfo success', userInfo);
+      const orders = extractOrdersFromClaims(userInfo);
+      setRecentOrders(orders);
+    } catch (err) {
+      console.warn('[profile] unable to refresh orders from /userinfo', err);
+      const message =
+        err instanceof Error && err.message.startsWith('userinfo_failed:')
+          ? `Impossible de rafraîchir les commandes (userinfo ${err.message.split(':')[1]}).`
+          : 'Impossible de rafraîchir les commandes pour le moment.';
+      setRefreshOrdersError(message);
+    } finally {
+      setRefreshingOrders(false);
     }
   };
 
@@ -387,9 +483,20 @@ const Profile = () => {
 
         <div className="profile-orders">
           <div className="orders-header">
-            <h2 className="orders-title">Dernières commandes</h2>
-            <p className="orders-subtitle">Extraites de votre jeton</p>
+            <div>
+              <h2 className="orders-title">Dernières commandes</h2>
+              <p className="orders-subtitle">Extraites de votre jeton</p>
+            </div>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={handleRefreshOrders}
+              disabled={refreshingOrders || loadingClaims}
+            >
+              {refreshingOrders ? 'Rafraîchissement...' : 'Rafraîchir'}
+            </button>
           </div>
+          {refreshOrdersError ? <p className="hint">{refreshOrdersError}</p> : null}
           {loadingClaims ? (
             <p className="hint">Chargement des commandes...</p>
           ) : null}
