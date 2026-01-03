@@ -9,8 +9,14 @@ import { getRouteFromHash, navigateTo, type Route } from './router';
 import { useEffect, useMemo, useState } from 'react';
 
 function App() {
-  const { isLoading, error, isAuthenticated, getAccessTokenSilently, getIdTokenClaims } =
-    useAuth0();
+  const {
+    isLoading,
+    error,
+    isAuthenticated,
+    getAccessTokenSilently,
+    getIdTokenClaims,
+    loginWithRedirect,
+  } = useAuth0();
   const [route, setRoute] = useState<Route>(() =>
     getRouteFromHash(window.location.hash),
   );
@@ -79,8 +85,8 @@ function App() {
         route={route}
         cartCount={cartCount}
         onNavigate={(next) => {
-          navigateTo(next);
-          setRoute(next);
+          const didNavigate = navigateTo(next, { loginWithRedirect });
+          if (didNavigate) setRoute(next);
         }}
       />
       <main className="app-main">{content}</main>

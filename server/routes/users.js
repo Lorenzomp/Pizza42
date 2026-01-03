@@ -1,8 +1,55 @@
 import { Router } from 'express';
+import fetch from 'node-fetch';
 import { requireAuth } from '../auth.js';
+import { auth0Domain } from '../config.js';
 import { getUser, patchUser } from '../management.js';
 
 const router = Router();
+
+const resolveIssuerBaseURL = (domain) => {
+  if (!domain) return '';
+  return domain.startsWith('http') ? domain : `https://${domain}`;
+};
+
+const findNamespacedOrders = (claimsObj) => {
+  if (!claimsObj || typeof claimsObj !== 'object') return null;
+  const key = Object.keys(claimsObj).find((candidate) =>
+    candidate.endsWith('/orders'),
+  );
+  return key ? claimsObj[key] : null;
+};
+
+const extractBearerToken = (req) => {
+  if (req.auth?.token) return req.auth.token;
+  const header = req.headers.authorization || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+};
+
+const fetchOrdersFromAuth0 = async (accessToken) => {
+  const issuerBaseURL = resolveIssuerBaseURL(auth0Domain);
+  if (!issuerBaseURL) {
+    throw new Error('missing_auth0_domain');
+  }
+  const response = await fetch(`${issuerBaseURL}/userinfo`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('userinfo_failed');
+  }
+  const userInfo = await response.json();
+  console.log('userInfo:', userInfo);
+  console.log('used AT:', accessToken);
+  if (Array.isArray(userInfo?.orders)) return userInfo.orders;
+  if (Array.isArray(userInfo?.app_metadata?.orders)) {
+    return userInfo.app_metadata.orders;
+  }
+  const namespacedOrders = findNamespacedOrders(userInfo);
+  if (Array.isArray(namespacedOrders)) return namespacedOrders;
+  return null;
+};
 
 router.get('/me', requireAuth, (req, res) => {
   const payload = req.auth?.payload || {};
@@ -87,10 +134,19 @@ router.post('/me/orders', requireAuth, async (req, res) => {
   };
 
   try {
-    const user = await getUser(payload.sub);
-    const existingOrders = Array.isArray(user.app_metadata?.orders)
-      ? user.app_metadata.orders
-      : [];
+    const accessToken = extractBearerToken(req);
+    if (!accessToken) {
+      return res.status(401).json({ error: 'missing_access_token' });
+    }
+    const ordersFromClaims = await fetchOrdersFromAuth0(accessToken);
+    const existingOrders =
+      ordersFromClaims ??
+      (await (async () => {
+        const user = await getUser(payload.sub);
+        return Array.isArray(user?.app_metadata?.orders)
+          ? user.app_metadata.orders
+          : [];
+      })());
     const nextOrders = [...existingOrders, order];
 
     await patchUser(payload.sub, {

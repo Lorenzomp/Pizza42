@@ -10,7 +10,7 @@ type NavbarProps = {
 };
 
 export default function Navbar({ route, cartCount, onNavigate }: NavbarProps) {
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth0();
 
   return (
     <header className="navbar">
@@ -35,15 +35,7 @@ export default function Navbar({ route, cartCount, onNavigate }: NavbarProps) {
                 aria-label="Mon profil"
                 disabled={isLoading}
                 aria-current={route === 'profile' ? 'page' : undefined}
-                onClick={() =>
-                  loginWithRedirect({
-                    authorizationParams: {
-                      scope:
-                        'openid profile email offline_access phone address email_verified orders update:user_app_metadata',
-                      redirect_uri: `${window.location.origin}#/profile`,
-                    },
-                  })
-                }
+                onClick={() => onNavigate('profile')}
               >
                 <img
                   src="/profile.svg"

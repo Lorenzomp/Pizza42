@@ -7,7 +7,12 @@ import { apiBasePath } from '../api/basePath';
 const PENDING_ORDER_KEY = 'pizza42_pending_order_v1';
 
 export default function SuccessOrderPage() {
-  const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
+  const {
+    isAuthenticated,
+    isLoading,
+    getAccessTokenSilently,
+    loginWithRedirect,
+  } = useAuth0();
   const [cleared, setCleared] = useState(false);
   const [orderSaved, setOrderSaved] = useState(false);
   const [orderError, setOrderError] = useState('');
@@ -88,9 +93,9 @@ export default function SuccessOrderPage() {
             <button
               type="button"
               className="button primary"
-              onClick={() => navigateTo('home')}
+              onClick={() => navigateTo('profile', { loginWithRedirect })}
             >
-              Retour aux pizzas
+              Accéder aux commandes
             </button>
           </div>
         </article>

@@ -9,6 +9,7 @@ import {
   type CartItem,
 } from '../cart/storage';
 import { formatPriceEUR } from '../format';
+import { auth0Scopes } from '../auth/scopes';
 
 const PENDING_ORDER_KEY = 'pizza42_pending_order_v1';
 
@@ -29,7 +30,7 @@ export default function CartPage() {
 
     loginWithRedirect({
       authorizationParams: {
-        scope: 'openid profile email offline_access address phone email_verified update:my_profile',
+        scope: auth0Scopes.checkout,
         redirect_uri: `${window.location.origin}#/success`,
       },
     });

@@ -1,4 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react';
+import { auth0Scopes } from './auth/scopes';
 
 type LoginButtonProps = {
   className?: string;
@@ -20,9 +21,8 @@ export default function LoginButton({
       type="button"
       onClick={() => loginWithRedirect({
         authorizationParams: {
-          scope:
-            'openid profile email offline_access',
-          redirect_uri: `${window.location.origin}#/profile`,
+          scope: auth0Scopes.login,
+          redirect_uri: `${window.location.origin}#/`,
         },
       })}
       className={classes}
