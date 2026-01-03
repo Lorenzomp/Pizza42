@@ -1,19 +1,18 @@
 import { auth } from 'express-oauth2-jwt-bearer';
-import { auth0Audience, auth0Domain } from './config.js';
+import { auth0Audience, auth0Issuer } from './config.js';
 
-const issuerBaseURL = auth0Domain
-  ? auth0Domain.startsWith('http')
-    ? auth0Domain
-    : `https://${auth0Domain}`
-  : null;
-const authMiddleware =
-  issuerBaseURL && auth0Audience
-    ? auth({ issuerBaseURL, audience: auth0Audience })
+export const jwtCheck =
+  auth0Issuer && auth0Audience
+    ? auth({
+      audience: auth0Audience,
+      issuerBaseURL: auth0Issuer,
+      tokenSigningAlg: 'RS256',
+    })
     : null;
 
 export const requireAuth = (req, res, next) => {
-  if (!authMiddleware) {
+  if (!jwtCheck) {
     return res.status(500).json({ error: 'auth_config_missing' });
   }
-  return authMiddleware(req, res, next);
+  return jwtCheck(req, res, next);
 };

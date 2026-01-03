@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import usersRouter from './routes/users.js';
 import { basePath } from './config.js';
+import { jwtCheck } from './auth.js';
 
 const app = express();
 const resolvedBasePath = basePath || '';
@@ -27,6 +28,17 @@ console.log('Booting API server', {
 
 app.use(cors());
 app.use(express.json());
+
+if (!jwtCheck) {
+  console.error('Missing Auth0 JWT configuration; API endpoints are disabled.');
+  app.use(apiMountPath, (req, res) =>
+    res.status(500).json({ error: 'auth_config_missing' }),
+  );
+} else {
+  // Enforce JWT validation on all API endpoints.
+  app.use(apiMountPath, jwtCheck);
+}
+
 app.get(healthPath, (req, res) => res.status(200).json({ status: 'ok' }));
 app.use(apiMountPath, usersRouter);
 

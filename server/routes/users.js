@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import fetch from 'node-fetch';
-import { requireAuth } from '../auth.js';
 import { auth0Domain } from '../config.js';
 import { getUser, patchUser } from '../management.js';
 
@@ -51,7 +50,7 @@ const fetchOrdersFromAuth0 = async (accessToken) => {
   return null;
 };
 
-router.get('/me', requireAuth, (req, res) => {
+router.get('/me', (req, res) => {
   const payload = req.auth?.payload || {};
   res.json({
     user_id: payload.sub,
@@ -60,7 +59,7 @@ router.get('/me', requireAuth, (req, res) => {
   });
 });
 
-router.patch('/me/metadata', requireAuth, async (req, res) => {
+router.patch('/me/metadata', async (req, res) => {
   const payload = req.auth?.payload;
   if (!payload?.sub) {
     return res.status(401).json({ error: 'invalid_token' });
@@ -96,7 +95,7 @@ router.patch('/me/metadata', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/me/orders', requireAuth, async (req, res) => {
+router.post('/me/orders', async (req, res) => {
   const payload = req.auth?.payload;
   if (!payload?.sub) {
     return res.status(401).json({ error: 'invalid_token' });

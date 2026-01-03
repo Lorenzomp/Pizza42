@@ -237,7 +237,7 @@ function ProfilePage() {
             {scopeError ? (
               <p className="muted">{scopeError}</p>
             ) : (
-              <p className="muted">Vérification des permissions...</p>
+              <p className="muted">Chargement...</p>
             )}
           </div>
         </section>
