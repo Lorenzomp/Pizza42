@@ -39,8 +39,6 @@ const fetchOrdersFromAuth0 = async (accessToken) => {
     throw new Error('userinfo_failed');
   }
   const userInfo = await response.json();
-  console.log('userInfo:', userInfo);
-  console.log('used AT:', accessToken);
   if (Array.isArray(userInfo?.orders)) return userInfo.orders;
   if (Array.isArray(userInfo?.app_metadata?.orders)) {
     return userInfo.app_metadata.orders;

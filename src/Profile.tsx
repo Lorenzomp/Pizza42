@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { apiBasePath } from './api/basePath';
 import { auth0Scopes } from './auth/scopes';
@@ -164,6 +164,7 @@ const Profile = () => {
   const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
   const [refreshingOrders, setRefreshingOrders] = useState(false);
   const [refreshOrdersError, setRefreshOrdersError] = useState('');
+  const didAutoRefreshOrders = useRef(false);
 
   const baseName = user?.name || '';
   const baseEmail = user?.email || '';
@@ -286,61 +287,7 @@ const Profile = () => {
     };
   }, [isAuthenticated, getIdTokenClaims, baseName, baseEmail, user]);
 
-  if (isLoading) {
-    return <div className="loading-text">Chargement du profil...</div>;
-  }
-
-  const handleSave = async () => {
-    if (!isAuthenticated) return;
-    setSaveError('');
-    setSaveSuccess(false);
-
-    const updates: Record<string, unknown> = {};
-    const trimmedAddress = form.address.trim();
-    const trimmedPhone = form.phone.trim();
-
-    if (trimmedAddress) updates.address = trimmedAddress;
-    if (trimmedPhone) updates.phone = { number: trimmedPhone };
-
-    if (!apiBasePath) {
-      setSaveError("Impossible de déterminer l'API.");
-      return;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      setSaveError('Aucune donnée à mettre à jour.');
-      return;
-    }
-
-	    setSaving(true);
-	    try {
-	      const token = await getAccessTokenSilently({
-	        authorizationParams: {
-	          audience: import.meta.env.AUTH0_AUDIENCE,
-	        },
-	      });
-	      const response = await fetch(`${apiBasePath}/me/metadata`, {
-	        method: 'PATCH',
-	        headers: {
-	          Authorization: `Bearer ${token}`,
-	          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur API');
-      }
-
-      setSaveSuccess(true);
-    } catch {
-      setSaveError('Mise à jour impossible pour le moment.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRefreshOrders = async () => {
+  const refreshOrdersFromUserInfo = useCallback(async () => {
     if (!isAuthenticated) return;
     setRefreshOrdersError('');
     setRefreshingOrders(true);
@@ -360,6 +307,7 @@ const Profile = () => {
         accessTokenIss: decoded?.iss,
         accessTokenSub: decoded?.sub,
       });
+
       const issuerBaseURL = resolveIssuerBaseURL(import.meta.env.AUTH0_DOMAIN);
       if (!issuerBaseURL) {
         throw new Error('missing_auth0_domain');
@@ -399,6 +347,70 @@ const Profile = () => {
       setRefreshOrdersError(message);
     } finally {
       setRefreshingOrders(false);
+    }
+  }, [getAccessTokenSilently, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || isLoading) {
+      didAutoRefreshOrders.current = false;
+      return;
+    }
+    if (didAutoRefreshOrders.current) return;
+    didAutoRefreshOrders.current = true;
+    void refreshOrdersFromUserInfo();
+  }, [isAuthenticated, isLoading, refreshOrdersFromUserInfo]);
+
+  if (isLoading) {
+    return <div className="loading-text">Chargement du profil...</div>;
+  }
+
+  const handleSave = async () => {
+    if (!isAuthenticated) return;
+    setSaveError('');
+    setSaveSuccess(false);
+
+    const updates: Record<string, unknown> = {};
+    const trimmedAddress = form.address.trim();
+    const trimmedPhone = form.phone.trim();
+
+    if (trimmedAddress) updates.address = trimmedAddress;
+    if (trimmedPhone) updates.phone = { number: trimmedPhone };
+
+    if (!apiBasePath) {
+      setSaveError("Impossible de déterminer l'API.");
+      return;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      setSaveError('Aucune donnée à mettre à jour.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.AUTH0_AUDIENCE,
+        },
+      });
+      const response = await fetch(`${apiBasePath}/me/metadata`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur API');
+      }
+
+      setSaveSuccess(true);
+    } catch {
+      setSaveError('Mise à jour impossible pour le moment.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -490,7 +502,7 @@ const Profile = () => {
             <button
               type="button"
               className="button secondary"
-              onClick={handleRefreshOrders}
+              onClick={refreshOrdersFromUserInfo}
               disabled={refreshingOrders || loadingClaims}
             >
               {refreshingOrders ? 'Rafraîchissement...' : 'Rafraîchir'}
