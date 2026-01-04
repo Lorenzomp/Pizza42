@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { apiBasePath } from './api/basePath';
 import { auth0Scopes } from './auth/scopes';
+
+const AUTO_USERINFO_DEDUP_MS = 1500;
+const autoUserInfoRefreshState = new Map<
+  string,
+  { inFlight: Promise<void> | null; lastStartedAt: number }
+>();
 
 type OrderSummary = {
   id: string;
@@ -164,7 +170,6 @@ const Profile = () => {
   const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
   const [refreshingOrders, setRefreshingOrders] = useState(false);
   const [refreshOrdersError, setRefreshOrdersError] = useState('');
-  const didAutoRefreshOrders = useRef(false);
 
   const baseName = user?.name || '';
   const baseEmail = user?.email || '';
@@ -287,79 +292,167 @@ const Profile = () => {
     };
   }, [isAuthenticated, getIdTokenClaims, baseName, baseEmail, user]);
 
-  const refreshOrdersFromUserInfo = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setRefreshOrdersError('');
-    setRefreshingOrders(true);
-    try {
-      const tokenResponse = await getAccessTokenSilently({
-        detailedResponse: true,
-        cacheMode: 'off',
-        authorizationParams: {
-          scope: auth0Scopes.profile,
-        },
-      });
+  const refreshOrdersFromUserInfo = useCallback(
+    async (mode: 'auto' | 'manual') => {
+      if (!isAuthenticated) return;
 
-      const accessToken = tokenResponse.access_token;
-      const decoded = decodeJwtPayload(accessToken);
-      console.log('[profile] refresh orders token details', {
-        tokenEndpointScope: tokenResponse.scope,
-        accessTokenAud: decoded?.aud,
-        accessTokenIss: decoded?.iss,
-        accessTokenSub: decoded?.sub,
-      });
+      const userId =
+        typeof user?.sub === 'string' && user.sub.trim().length > 0
+          ? user.sub
+          : null;
+      if (!userId) return;
 
-      const issuerBaseURL = resolveIssuerBaseURL(import.meta.env.AUTH0_DOMAIN);
-      if (!issuerBaseURL) {
-        throw new Error('missing_auth0_domain');
-      }
+      if (mode === 'auto') {
+        const now = Date.now();
+        const state = autoUserInfoRefreshState.get(userId) ?? {
+          inFlight: null,
+          lastStartedAt: 0,
+        };
 
-      const response = await fetch(`${issuerBaseURL}/userinfo`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+        if (state.inFlight) return state.inFlight;
+        if (now - state.lastStartedAt < AUTO_USERINFO_DEDUP_MS) return;
 
-      if (!response.ok) {
-        let body = '';
-        try {
-          body = await response.text();
-        } catch {
-          body = '';
-        }
-        console.warn('[profile] /userinfo failed', {
-          status: response.status,
-          statusText: response.statusText,
-          body,
+        state.lastStartedAt = now;
+        const inFlight = (async () => {
+          setRefreshOrdersError('');
+          setRefreshingOrders(true);
+          try {
+            const tokenResponse = await getAccessTokenSilently({
+              detailedResponse: true,
+              cacheMode: 'off',
+              authorizationParams: {
+                scope: auth0Scopes.profile,
+              },
+            });
+
+            const accessToken = tokenResponse.access_token;
+            const decoded = decodeJwtPayload(accessToken);
+            console.log('[profile] refresh orders token details', {
+              tokenEndpointScope: tokenResponse.scope,
+              accessTokenAud: decoded?.aud,
+              accessTokenIss: decoded?.iss,
+              accessTokenSub: decoded?.sub,
+            });
+
+            const issuerBaseURL = resolveIssuerBaseURL(import.meta.env.AUTH0_DOMAIN);
+            if (!issuerBaseURL) {
+              throw new Error('missing_auth0_domain');
+            }
+
+            const response = await fetch(`${issuerBaseURL}/userinfo`, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
+
+            if (!response.ok) {
+              let body = '';
+              try {
+                body = await response.text();
+              } catch {
+                body = '';
+              }
+              console.warn('[profile] /userinfo failed', {
+                status: response.status,
+                statusText: response.statusText,
+                body,
+              });
+              throw new Error(`userinfo_failed:${response.status}`);
+            }
+
+            const userInfo = await response.json();
+            console.log('[profile] /userinfo success', userInfo);
+            const orders = extractOrdersFromClaims(userInfo);
+            setRecentOrders(orders);
+          } catch (err) {
+            console.warn('[profile] unable to refresh orders from /userinfo', err);
+            const message =
+              err instanceof Error && err.message.startsWith('userinfo_failed:')
+                ? `Impossible de rafraîchir les commandes (userinfo ${err.message.split(':')[1]}).`
+                : 'Impossible de rafraîchir les commandes pour le moment.';
+            setRefreshOrdersError(message);
+          } finally {
+            setRefreshingOrders(false);
+          }
+        })().finally(() => {
+          const current = autoUserInfoRefreshState.get(userId);
+          if (current?.inFlight === inFlight) {
+            autoUserInfoRefreshState.set(userId, { ...current, inFlight: null });
+          }
         });
-        throw new Error(`userinfo_failed:${response.status}`);
+
+        autoUserInfoRefreshState.set(userId, { ...state, inFlight });
+        return inFlight;
       }
 
-      const userInfo = await response.json();
-      console.log('[profile] /userinfo success', userInfo);
-      const orders = extractOrdersFromClaims(userInfo);
-      setRecentOrders(orders);
-    } catch (err) {
-      console.warn('[profile] unable to refresh orders from /userinfo', err);
-      const message =
-        err instanceof Error && err.message.startsWith('userinfo_failed:')
-          ? `Impossible de rafraîchir les commandes (userinfo ${err.message.split(':')[1]}).`
-          : 'Impossible de rafraîchir les commandes pour le moment.';
-      setRefreshOrdersError(message);
-    } finally {
-      setRefreshingOrders(false);
-    }
-  }, [getAccessTokenSilently, isAuthenticated]);
+      setRefreshOrdersError('');
+      setRefreshingOrders(true);
+      try {
+        const tokenResponse = await getAccessTokenSilently({
+          detailedResponse: true,
+          cacheMode: 'off',
+          authorizationParams: {
+            scope: auth0Scopes.profile,
+          },
+        });
+
+        const accessToken = tokenResponse.access_token;
+        const decoded = decodeJwtPayload(accessToken);
+        console.log('[profile] refresh orders token details', {
+          tokenEndpointScope: tokenResponse.scope,
+          accessTokenAud: decoded?.aud,
+          accessTokenIss: decoded?.iss,
+          accessTokenSub: decoded?.sub,
+        });
+
+        const issuerBaseURL = resolveIssuerBaseURL(import.meta.env.AUTH0_DOMAIN);
+        if (!issuerBaseURL) {
+          throw new Error('missing_auth0_domain');
+        }
+
+        const response = await fetch(`${issuerBaseURL}/userinfo`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          let body = '';
+          try {
+            body = await response.text();
+          } catch {
+            body = '';
+          }
+          console.warn('[profile] /userinfo failed', {
+            status: response.status,
+            statusText: response.statusText,
+            body,
+          });
+          throw new Error(`userinfo_failed:${response.status}`);
+        }
+
+        const userInfo = await response.json();
+        console.log('[profile] /userinfo success', userInfo);
+        const orders = extractOrdersFromClaims(userInfo);
+        setRecentOrders(orders);
+      } catch (err) {
+        console.warn('[profile] unable to refresh orders from /userinfo', err);
+        const message =
+          err instanceof Error && err.message.startsWith('userinfo_failed:')
+            ? `Impossible de rafraîchir les commandes (userinfo ${err.message.split(':')[1]}).`
+            : 'Impossible de rafraîchir les commandes pour le moment.';
+        setRefreshOrdersError(message);
+      } finally {
+        setRefreshingOrders(false);
+      }
+    },
+    [getAccessTokenSilently, isAuthenticated, user?.sub],
+  );
 
   useEffect(() => {
-    if (!isAuthenticated || isLoading) {
-      didAutoRefreshOrders.current = false;
-      return;
-    }
-    if (didAutoRefreshOrders.current) return;
-    didAutoRefreshOrders.current = true;
-    void refreshOrdersFromUserInfo();
-  }, [isAuthenticated, isLoading, refreshOrdersFromUserInfo]);
+    if (!isAuthenticated) return;
+    void refreshOrdersFromUserInfo('auto');
+  }, [isAuthenticated, refreshOrdersFromUserInfo]);
 
   if (isLoading) {
     return <div className="loading-text">Chargement du profil...</div>;
@@ -503,7 +596,7 @@ const Profile = () => {
             <button
               type="button"
               className="button secondary"
-              onClick={refreshOrdersFromUserInfo}
+              onClick={() => void refreshOrdersFromUserInfo('manual')}
               disabled={refreshingOrders || loadingClaims}
             >
               {refreshingOrders ? 'Rafraîchissement...' : 'Rafraîchir'}

@@ -12,14 +12,16 @@ Application web de démonstration pour Pizza42 (React + TypeScript + Vite) avec 
 ## Commandes clés
 
 - **Dev (frontend + backend, hot reload)** : `npm run dev` (par défaut `http://localhost:3000`)
-- **Build** : `npm run build` (génère `dist/`)
-- **Preview du build (sert uniquement `dist/`)** : `npm run preview`
+- **Build (frontend)** : `npm run build` (génère `dist/`)
+- **Start (prod, sert `dist/` + API Express)** : `npm start`
+- **Preview du build (frontend uniquement, sans API Express)** : `npm run preview`
 - **Lint** : `npm run lint`
 
 ## Build et exécution du build en local
 
 - `npm run build`
-- `npm run preview` (sert `dist/` via Vite, sans l’API Express)
+- `npm start` (sert `dist/` via Express, avec l’API)
+- `npm run preview` (sert `dist/` via Vite, sans le backend)
 
 ## Contexte / architecture
 
