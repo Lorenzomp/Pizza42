@@ -294,6 +294,7 @@ const Profile = () => {
     try {
       const tokenResponse = await getAccessTokenSilently({
         detailedResponse: true,
+        cacheMode: 'off',
         authorizationParams: {
           scope: auth0Scopes.profile,
         },
@@ -513,7 +514,7 @@ const Profile = () => {
             <p className="hint">Chargement des commandes...</p>
           ) : null}
           {!loadingClaims && recentOrders.length === 0 ? (
-            <p className="hint">Aucune commande disponible dans le jeton.</p>
+            <p className="hint">Aucune commande n'a été passée récemment.</p>
           ) : null}
           {!loadingClaims && recentOrders.length > 0 ? (
             <ul className="orders-list">
