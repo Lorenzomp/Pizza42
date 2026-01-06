@@ -10,6 +10,23 @@ export const jwtCheck =
     })
     : null;
 
+export const requireVerifiedEmail = (req, res, next) => {
+  const payload = req.auth?.payload;
+  if (!payload || typeof payload !== 'object') {
+    return res.status(401).json({ error: 'invalid_token' });
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(payload, 'email_verified')) {
+    return res.status(403).json({ error: 'email_verified_claim_missing' });
+  }
+
+  if (payload.email_verified !== true) {
+    return res.status(403).json({ error: 'email_not_verified' });
+  }
+
+  return next();
+};
+
 export const requireAuth = (req, res, next) => {
   if (!jwtCheck) {
     return res.status(500).json({ error: 'auth_config_missing' });

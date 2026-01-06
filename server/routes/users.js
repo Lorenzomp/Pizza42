@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fetch from 'node-fetch';
 import { auth0Domain } from '../config.js';
 import { getUser, patchUser } from '../management.js';
+import { requireVerifiedEmail } from '../auth.js';
 
 const router = Router();
 
@@ -93,7 +94,7 @@ router.patch('/me/metadata', async (req, res) => {
   }
 });
 
-router.post('/me/orders', async (req, res) => {
+router.post('/me/orders', requireVerifiedEmail, async (req, res) => {
   const payload = req.auth?.payload;
   if (!payload?.sub) {
     return res.status(401).json({ error: 'invalid_token' });
